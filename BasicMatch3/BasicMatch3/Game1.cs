@@ -18,8 +18,8 @@ namespace BasicMatch3
 		SpriteBatch spriteBatch;
 		SpriteFont font;
 
-		MouseState mouseState;
-		MouseState mousePrevState;
+        KeyboardState keyboardState, keyboardPrevState;
+		MouseState mouseState, mousePrevState;
 		Point mouseCords;
 		Rectangle mouseRect;
 	
@@ -38,7 +38,7 @@ namespace BasicMatch3
 		Point right = new Point(1, 0);
 		/* use this to set true /false to see if we should check in any give direction
 		 *  0 up
-		 *  1 doen
+		 *  1 down
 		 *  2 left
 		 *  3 right
 		 *  reset all to true when we clear the selected list
@@ -54,6 +54,9 @@ namespace BasicMatch3
 		};
 		bool[] pos1CheckDirs = new bool[4];
 		bool[] pos2CheckDirs = new bool[4];
+
+        bool gameOver = false;
+
 		/*
 		 * now the things we need to keep track of what is in each position, and how to match it against the right pos
 		 * to check for matches
@@ -103,14 +106,63 @@ namespace BasicMatch3
 		
 		protected override void Update(GameTime gameTime)
 		{
-			// Allows the game to exit
-			if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed)
-				this.Exit();
+            Point? clickedSpace = null;
+            Point? clickPosition = null;
+            //use this to get swappign gems if it returns two nulls they wer enot adjacent
+            Point?[] swappingGems = new Point?[2]; 
+
 			mousePrevState = mouseState;
+            keyboardPrevState = keyboardState;
+
 			mouseState = Mouse.GetState();
+            keyboardState = Keyboard.GetState();
+
+            if (keyboardState.IsKeyDown(Keys.Escape))
+                this.exit;
+
 			mouseCords = new Point(Mouse.GetState().X, Mouse.GetState().Y);
 			mouseRect = new Rectangle(mouseCords.X, mouseCords.Y, 1, 1);
 			
+            //check if the mouse button has been released
+            if(mousePrevState.LeftButton == ButtonState.Pressed && mouseState.LeftButton == ButtonState.Released)
+            {
+                if (gameOver)
+                    this.Exit(); //TODO: not ideal to quit entire program, but will change later
+                
+                if(mouse.clicklocation == lasClickLocation)
+                {
+                   //mouse click not a mouse drag
+                   clickedSpace = CheckForGemClick(mouse.clicklocation)
+                }
+                else
+                {
+                   //mouse drag
+                   selected[0] = CheckForGemClick(LastClickLocation)
+                   clickedSpace = CheckForGemClick(mouse.clickLocation)
+                   if(!selected[0] && !clickedSpace)
+                   {
+                       //if not prt of  avalid drag deselct both
+                       selected[0] = null;
+                       clickedSpace = null;
+                   }
+                }
+            }
+            else if (mousePrevState.LeftButton == ButtonState.Released && mouseState.LeftButton == ButtonState.Pressed)
+            {
+                //mouse has been clicked
+                clickPosition = new Point(mouseState.X, mouseState.Y);
+            }
+
+            if(clickedSpace != null && selected[0] == null)
+            {
+                //first clicked gem
+                selected[0] = clickedSpace;
+            }
+            else if(clickedSpace != null && selected[0] != null)
+            {
+                //two gems have been clicked try to swap them
+                swappingGems = GetSwappingGems(selected[0], clickedSpace);
+            }
 
 
 			base.Update(gameTime);
@@ -132,6 +184,7 @@ namespace BasicMatch3
 			{
 				for (int y = 0; y <= yMax; y++)
 				{
+                    //TODO: half of this function should be called from update and not draw.
 					if (MouseHover(x,y))
 						drawColor = hilite;
 					else if(selected.Contains(new Point(x,y)))
@@ -146,6 +199,46 @@ namespace BasicMatch3
 			base.Draw(gameTime);
 		}
 
+
+        protected Point?[] GetSwappingGems(Point firstSelection, Point clickedSpace)
+        {
+            Point firstGem = firstSelection;
+            Point secondGem = clickedSpace;
+            Point? highlightedGem = null;
+
+            if((firstGem.X == secondGem.X +1 ) && (firstGem.Y == secondGem.Y))
+
+
+            //need ot figure out how to tell if they are adjacent
+          /*# If the gems at the (X, Y) coordinates of the two gems are adjacent,
+            # then their 'direction' keys are set to the appropriate direction
+            # value to be swapped with each other.
+            # Otherwise, (None, None) is returned.
+            firstGem = {'imageNum': board[firstXY['x']][firstXY['y']],
+                        'x': firstXY['x'],
+                        'y': firstXY['y']}
+            secondGem = {'imageNum': board[secondXY['x']][secondXY['y']],
+                         'x': secondXY['x'],
+                         'y': secondXY['y']}
+            highlightedGem = None
+            if firstGem['x'] == secondGem['x'] + 1 and firstGem['y'] == secondGem['y']:
+                firstGem['direction'] = LEFT
+                secondGem['direction'] = RIGHT
+            elif firstGem['x'] == secondGem['x'] - 1 and firstGem['y'] == secondGem['y']:
+                firstGem['direction'] = RIGHT
+                secondGem['direction'] = LEFT
+            elif firstGem['y'] == secondGem['y'] + 1 and firstGem['x'] == secondGem['x']:
+                firstGem['direction'] = UP
+                secondGem['direction'] = DOWN
+            elif firstGem['y'] == secondGem['y'] - 1 and firstGem['x'] == secondGem['x']:
+                firstGem['direction'] = DOWN
+                secondGem['direction'] = UP
+            else:
+                # These gems are not adjacent and can't be swapped.
+                return None, None
+            return firstGem, secondGem
+             */
+        }
 		protected bool MouseHover(int x, int y)
 		{
 			//create a rectangle we can chekc for collisons with that shoudl surround each cell
